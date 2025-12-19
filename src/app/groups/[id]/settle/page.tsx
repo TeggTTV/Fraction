@@ -11,7 +11,7 @@ interface PageProps {
 
 export default async function SettlePage({ params }: PageProps) {
 	const session = await auth();
-	if (!session?.user) redirect('/api/auth/signin');
+	if (!session?.user) redirect('/profile');
 
 	const { id } = await params;
 	const group = await getGroupDetails(id);

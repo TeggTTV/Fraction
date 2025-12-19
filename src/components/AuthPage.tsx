@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { signIn } from 'next-auth/react';
 import {
 	LogIn,
 	UserPlus,
@@ -99,23 +101,38 @@ export default function AuthPage() {
 
 	const handleGoogleSignIn = async () => {
 		setIsGoogleLoading(true);
-		window.location.href = '/api/auth/signin/google';
+		await signIn('google', { callbackUrl: '/' });
 	};
 
 	return (
-		<div className="flex h-full flex-col bg-[#f2f4f7] px-4 pt-8 pb-28 overflow-y-auto">
+		<motion.div
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			transition={{ duration: 0.3 }}
+			className="flex h-full flex-col bg-[#f2f4f7] px-4 pt-8 pb-28 overflow-y-auto"
+		>
 			{/* Header */}
-			<div className="mb-4 text-center">
+			<motion.div
+				initial={{ y: -20, opacity: 0 }}
+				animate={{ y: 0, opacity: 1 }}
+				transition={{ delay: 0.1, duration: 0.4 }}
+				className="mb-4 text-center"
+			>
 				<h1 className="text-3xl font-extrabold text-text-primary mb-1">
 					Welcome to Fraction
 				</h1>
 				<p className="text-sm text-text-secondary">
 					Split expenses with friends, easily.
 				</p>
-			</div>
+			</motion.div>
 
 			{/* Tab Switcher */}
-			<div className="mb-4 flex gap-2 bg-white rounded-2xl p-1.5 shadow-sm border border-slate-100">
+			<motion.div
+				initial={{ y: -20, opacity: 0 }}
+				animate={{ y: 0, opacity: 1 }}
+				transition={{ delay: 0.2, duration: 0.4 }}
+				className="mb-4 flex gap-2 bg-white rounded-2xl p-1.5 shadow-sm border border-slate-100"
+			>
 				<button
 					onClick={() => setMode('login')}
 					className={cn(
@@ -140,20 +157,25 @@ export default function AuthPage() {
 					<UserPlus size={18} className="inline mr-2" />
 					Sign Up
 				</button>
-			</div>
+			</motion.div>
 
 			{/* Forms */}
-			<div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-5">
+			<motion.div
+				initial={{ y: 20, opacity: 0 }}
+				animate={{ y: 0, opacity: 1 }}
+				transition={{ delay: 0.3, duration: 0.4 }}
+				className="bg-white rounded-3xl shadow-lg border border-slate-100 p-5"
+			>
 				{mode === 'login' ? (
 					<form onSubmit={handleLogin} className="space-y-3">
 						<h2 className="text-lg font-bold text-text-primary mb-3">
 							Log in to your account
 						</h2>
 
-						{/* Email */}
+						{/* Email or Username */}
 						<div>
 							<label className="block text-sm font-bold text-text-secondary mb-2">
-								Email
+								Email or Username
 							</label>
 							<div className="relative">
 								<Mail
@@ -161,12 +183,12 @@ export default function AuthPage() {
 									className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
 								/>
 								<input
-									type="email"
+									type="text"
 									value={loginEmail}
 									onChange={(e) =>
 										setLoginEmail(e.target.value)
 									}
-									placeholder="you@example.com"
+									placeholder="you@example.com or username"
 									required
 									className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl outline-none focus:border-brand-primary transition-colors"
 								/>
@@ -362,19 +384,27 @@ export default function AuthPage() {
 						</button>
 					</form>
 				)}
-			</div>
+			</motion.div>
 
 			{/* Divider */}
-			<div className="flex items-center gap-4 my-4">
+			<motion.div
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ delay: 0.4, duration: 0.3 }}
+				className="flex items-center gap-4 my-4"
+			>
 				<div className="flex-1 h-px bg-slate-200" />
 				<span className="text-xs font-medium text-text-secondary uppercase tracking-wider">
 					Or continue with
 				</span>
 				<div className="flex-1 h-px bg-slate-200" />
-			</div>
+			</motion.div>
 
 			{/* Google Sign In */}
-			<button
+			<motion.button
+				initial={{ y: 20, opacity: 0 }}
+				animate={{ y: 0, opacity: 1 }}
+				transition={{ delay: 0.5, duration: 0.4 }}
 				onClick={handleGoogleSignIn}
 				disabled={isGoogleLoading}
 				className="bg-white border-2 border-slate-200 text-text-primary font-bold py-4 rounded-xl hover:bg-slate-50 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 shadow-sm"
@@ -404,7 +434,7 @@ export default function AuthPage() {
 						Continue with Google
 					</>
 				)}
-			</button>
+			</motion.button>
 
 			<AlertToast
 				isOpen={showError}
@@ -412,6 +442,6 @@ export default function AuthPage() {
 				message={errorMessage}
 				variant="error"
 			/>
-		</div>
+		</motion.div>
 	);
 }

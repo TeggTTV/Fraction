@@ -16,7 +16,7 @@ interface PageProps {
 
 export default async function GroupPage({ params }: PageProps) {
 	const session = await auth();
-	if (!session?.user) redirect('/api/auth/signin');
+	if (!session?.user) redirect('/profile');
 
 	const { id } = await params;
 	const [group, friends] = await Promise.all([

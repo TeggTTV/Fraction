@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 
 export default async function ActivityPage() {
 	const session = await auth();
-	if (!session?.user) redirect('/api/auth/signin');
+	if (!session?.user) redirect('/profile');
 
 	const groups = await getGroups();
 	const myId = session.user.id;
