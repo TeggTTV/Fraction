@@ -1,0 +1,72 @@
+@import 'tailwindcss';
+
+:root {
+	/* Brand Colors */
+	--brand-primary: #3b82f6; /* Electric Blue */
+	--brand-secondary: #0ea5e9;
+
+	/* UI Colors */
+	--background: #f8fafc;
+	--foreground: #0f172a;
+
+	--surface-100: #ffffff;
+	--surface-200: #f1f5f9;
+	--surface-300: #e2e8f0;
+
+	--surface-glass: rgba(255, 255, 255, 0.8);
+
+	/* Text Colors */
+	--text-primary: #0f172a;
+	--text-secondary: #64748b;
+	--text-muted: #94a3b8;
+
+	/* Status Colors */
+	--status-success: #10b981;
+	--status-error: #ef4444;
+	--status-warning: #f59e0b;
+}
+
+@theme inline {
+	--color-brand-primary: var(--brand-primary);
+	--color-brand-secondary: var(--brand-secondary);
+
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+
+	--color-surface-100: var(--surface-100);
+	--color-surface-200: var(--surface-200);
+	--color-surface-300: var(--surface-300);
+
+	--color-surface-glass: var(--surface-glass);
+
+	--color-text-primary: var(--text-primary);
+	--color-text-secondary: var(--text-secondary);
+	--color-text-muted: var(--text-muted);
+
+	--font-sans: var(--font-inter);
+}
+
+body {
+	background: #0f172a; /* Dark background for desktop wrapper */
+	color: var(--foreground);
+	font-family: var(--font-inter), -apple-system, BlinkMacSystemFont,
+		'Segoe UI', sans-serif;
+	overflow: hidden; /* Prevent body scroll, handle in app wrapper */
+}
+
+/* Custom Utilities */
+.glass-panel {
+	background: var(--surface-glass);
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	border-top: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+/* Hide scrollbar for clean UI */
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+.no-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
