@@ -1,41 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, Search, X, Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { addFriend } from '@/app/actions';
+import { addFriend, getFriends } from '@/app/actions';
 
-const MOCK_FRIENDS = [
-	{
-		id: 'sarah',
-		name: 'Sarah Jenkins',
-		avatar: 'bg-pink-500',
-		username: '@sarahj',
-		status: 'owe',
-	},
-	{
-		id: 'mike',
-		name: 'Mike T',
-		avatar: 'bg-teal-500',
-		username: '@miket',
-		status: 'owed',
-	},
-	{
-		id: 'jess',
-		name: 'Jess',
-		avatar: 'bg-emerald-500',
-		username: '@jess_codes',
-		status: 'settled',
-	},
-];
+// Define the Friend type based on what getFriends returns
+type Friend = {
+	id: string;
+	name: string;
+	email: string | null;
+	image: string | null;
+	status: string; // 'settled' | 'owe' | 'owed'
+};
 
 export default function FriendsPage() {
+	const [friends, setFriends] = useState<Friend[]>([]);
+	const [isLoadingFriends, setIsLoadingFriends] = useState(true);
+
 	const [isAdding, setIsAdding] = useState(false);
 	const [email, setEmail] = useState('');
 	const [status, setStatus] = useState<
 		'idle' | 'loading' | 'success' | 'error'
 	>('idle');
 	const [message, setMessage] = useState('');
+
+	// Fetch friends on load
+	const fetchFriends = async () => {
+		try {
+			const data = await getFriends();
+			// @ts-ignore - status type mismatch simple fix
+			setFriends(data);
+		} catch (err) {
+			console.error('Failed to load friends', err);
+		} finally {
+			setIsLoadingFriends(false);
+		}
+	};
+
+	useEffect(() => {
+		fetchFriends();
+	}, []);
 
 	const handleAddFriend = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -46,6 +51,9 @@ export default function FriendsPage() {
 		if (result.success) {
 			setStatus('success');
 			setMessage(result.message);
+			// Refresh list
+			await fetchFriends();
+
 			setTimeout(() => {
 				setIsAdding(false);
 				setStatus('idle');
@@ -59,7 +67,7 @@ export default function FriendsPage() {
 	};
 
 	return (
-		<div className="relative flex h-full flex-col bg-white px-4 pt-12">
+		<div className="relative flex h-full flex-col bg-white px-4 pt-4">
 			<div className="mb-6 flex items-center justify-between">
 				<h1 className="text-3xl font-extrabold text-text-primary">
 					Friends
@@ -85,49 +93,59 @@ export default function FriendsPage() {
 			</div>
 
 			<div className="space-y-2">
-				{MOCK_FRIENDS.map((friend) => (
-					<div
-						key={friend.id}
-						className="flex items-center justify-between rounded-2xl p-3 hover:bg-slate-50 transition-colors cursor-pointer"
-					>
-						<div className="flex items-center gap-3">
-							<div
-								className={cn(
-									'flex h-12 w-12 items-center justify-center rounded-full text-white font-bold',
-									friend.avatar
-								)}
-							>
-								{friend.name[0]}
-							</div>
-							<div>
-								<h3 className="font-bold text-text-primary">
-									{friend.name}
-								</h3>
-								<p className="text-xs text-text-secondary">
-									{friend.username}
-								</p>
-							</div>
-						</div>
-
-						<div className="text-right">
-							{friend.status === 'owe' && (
-								<span className="text-xs font-bold text-orange-500">
-									You owe
-								</span>
-							)}
-							{friend.status === 'owed' && (
-								<span className="text-xs font-bold text-emerald-500">
-									Owes you
-								</span>
-							)}
-							{friend.status === 'settled' && (
-								<span className="text-xs font-bold text-slate-300">
-									Settled
-								</span>
-							)}
-						</div>
+				{isLoadingFriends ? (
+					<div className="flex justify-center p-8">
+						<Loader2 className="animate-spin text-slate-400" />
 					</div>
-				))}
+				) : (
+					friends.map((friend) => (
+						<div
+							key={friend.id}
+							className="flex items-center justify-between rounded-2xl p-3 hover:bg-slate-50 transition-colors cursor-pointer"
+						>
+							<div className="flex items-center gap-3">
+								{friend.image ? (
+									<img
+										src={friend.image}
+										alt={friend.name}
+										className="h-12 w-12 rounded-full object-cover"
+									/>
+								) : (
+									<div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-200 text-slate-500 font-bold">
+										{friend.name?.[0] || '?'}
+									</div>
+								)}
+
+								<div>
+									<h3 className="font-bold text-text-primary">
+										{friend.name}
+									</h3>
+									<p className="text-xs text-text-secondary">
+										{friend.email}
+									</p>
+								</div>
+							</div>
+
+							<div className="text-right">
+								{friend.status === 'owe' && (
+									<span className="text-xs font-bold text-orange-500">
+										You owe
+									</span>
+								)}
+								{friend.status === 'owed' && (
+									<span className="text-xs font-bold text-emerald-500">
+										Owes you
+									</span>
+								)}
+								{friend.status === 'settled' && (
+									<span className="text-xs font-bold text-slate-300">
+										Settled
+									</span>
+								)}
+							</div>
+						</div>
+					))
+				)}
 			</div>
 
 			{/* Add Friend Modal Overlay */}
@@ -192,7 +210,7 @@ export default function FriendsPage() {
 			)}
 
 			{/* Zero State */}
-			{MOCK_FRIENDS.length === 0 && (
+			{!isLoadingFriends && friends.length === 0 && (
 				<div className="mt-12 flex flex-col items-center justify-center text-center opacity-60">
 					<div className="mb-4 rounded-full bg-slate-100 p-6">
 						<UserPlus size={48} className="text-slate-400" />
@@ -200,9 +218,9 @@ export default function FriendsPage() {
 					<p className="text-lg font-bold text-text-primary">
 						Add your friends
 					</p>
-					<p className="text-sm text-text-secondary max-w-[200px]">
-						It's more fun to split bills with people you actually
-						know.
+					<p className="text-sm text-text-secondary max-w-50">
+						It&apos;s more fun to split bills with people you
+						actually know.
 					</p>
 				</div>
 			)}

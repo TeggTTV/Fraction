@@ -1,31 +1,29 @@
-'use client';
-
-import { use, useState, useEffect } from 'react';
-import { MOCK_GROUPS, MOCK_USERS } from '@/data/mock';
+import { auth } from '@/auth';
+import { getGroupDetails, getFriends } from '@/app/actions';
 import { ExpenseBubble } from '@/components/ExpenseBubble';
-import {
-	ChevronLeft,
-	Info,
-	Receipt,
-	Send,
-	DollarSign,
-	MoreHorizontal,
-} from 'lucide-react';
+import ExpenseInput from '@/components/ExpenseInput';
+import AddMemberModal from '@/components/AddMemberModal';
+import { GroupSettingsButton } from '@/components/GroupSettingsButton';
+import { ChevronLeft, DollarSign } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { redirect } from 'next/navigation';
 
-export default function GroupPage({
-	params,
-}: {
+// Add this interface to handle the params type
+interface PageProps {
 	params: Promise<{ id: string }>;
-}) {
-	// Unwrap params using use() hook as per Next.js 15+ guidance or await it if async component
-	// Since this is a client component, we'll use React.use() to unwrap the promise
-	const { id } = use(params);
-	const router = useRouter();
+}
 
-	const group = MOCK_GROUPS.find((g) => g.id === id);
+export default async function GroupPage({ params }: PageProps) {
+	const session = await auth();
+	if (!session?.user) redirect('/api/auth/signin');
+
+	const { id } = await params;
+	const [group, friends] = await Promise.all([
+		getGroupDetails(id),
+		getFriends(),
+	]);
+	const myId = session.user.id;
 
 	if (!group) {
 		return (
@@ -35,13 +33,15 @@ export default function GroupPage({
 		);
 	}
 
+	const memberIds = group.members.map((m) => m.userId);
+
 	return (
 		<div className="flex flex-col h-full bg-[#f2f4f7]">
 			{/* Header */}
 			<header className="sticky top-0 z-30 flex items-center justify-between border-b border-white/20 bg-white/80 px-4 py-4 backdrop-blur-md shadow-sm">
 				<div className="flex items-center gap-3">
 					<Link
-						href="/groups"
+						href="/"
 						className="rounded-full p-2 hover:bg-slate-100 transition-colors"
 					>
 						<ChevronLeft size={24} className="text-text-primary" />
@@ -52,7 +52,9 @@ export default function GroupPage({
 								'flex h-10 w-10 items-center justify-center rounded-full text-white font-bold shadow-sm',
 								group.type === 'house'
 									? 'bg-indigo-500'
-									: 'bg-teal-500'
+									: group.type === 'trip'
+									? 'bg-teal-500'
+									: 'bg-orange-500'
 							)}
 						>
 							{group.name[0]}
@@ -68,39 +70,69 @@ export default function GroupPage({
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
+					<AddMemberModal
+						groupId={id}
+						friends={friends}
+						currentMemberIds={memberIds}
+					/>
 					<Link href={`/groups/${id}/settle`}>
 						<button className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-700 transition-transform active:scale-95">
 							<DollarSign size={14} />
 							Settle
 						</button>
 					</Link>
-					<button className="rounded-full p-2 hover:bg-slate-100 transition-colors">
-						<MoreHorizontal
-							size={24}
-							className="text-text-secondary"
-						/>
-					</button>
+					<GroupSettingsButton
+						groupId={id}
+						groupName={group.name}
+						isOwner={group.ownerId === myId}
+					/>
 				</div>
 			</header>
 
 			{/* Chat / Feed Area */}
 			<main className="flex-1 overflow-y-auto p-4">
-				{/* Date Divider Example */}
+				{/* Date Divider (Mock for now, could group by date later) */}
+				{/* 
 				<div className="mb-6 text-center">
 					<span className="rounded-full bg-slate-200/60 px-3 py-1 text-[10px] font-medium text-slate-500">
 						Today
 					</span>
 				</div>
+				*/}
+
+				{group.expenses.length === 0 && (
+					<div className="flex flex-col items-center justify-center h-full opacity-50">
+						<p className="text-sm">No expenses yet.</p>
+					</div>
+				)}
 
 				{group.expenses.map((expense) => {
-					const isMe = expense.payerId === 'me';
-					const sender = isMe
-						? MOCK_USERS['me']
-						: MOCK_USERS[expense.payerId];
+					const isMe = expense.payerId === myId;
+
+					// Map Prisma user to Shared User type expected by ExpenseBubble
+					const sender = expense.payer
+						? {
+								id: expense.payer.id,
+								name: expense.payer.name || 'Unknown',
+								email: expense.payer.email || '',
+								avatar: expense.payer.image || '',
+						  }
+						: undefined;
+
+					// Map Prisma expense to Shared Expense type
+					// Note: Shared type expects 'date: Date', Prisma provides 'date: Date' (mapped from createdAt usually or date field)
+					// Our schema has 'date' field in Expense.
+					// However, splits might be mismatching types slightly (Prisma split vs Shared split).
+					// ExpenseBubble only uses description, amount, date. Splits are not rendered in bubble detail yet.
+					// We'll cast carefully.
+
 					return (
 						<ExpenseBubble
 							key={expense.id}
-							expense={expense}
+							expense={{
+								...expense,
+								groupId: expense.groupId || '', // Fallback for strict type
+							}}
 							isMe={isMe}
 							sender={sender}
 						/>
@@ -111,20 +143,8 @@ export default function GroupPage({
 				<div className="h-4" />
 			</main>
 
-			{/* Input Area (Mock) */}
-			<div className="sticky bottom-0 bg-white p-3 border-t border-slate-100 pb-8">
-				<div className="flex items-center gap-2">
-					<button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white transition-transform active:scale-95">
-						<Receipt size={20} />
-					</button>
-					<div className="flex-1 rounded-full bg-slate-100 px-4 py-2.5 text-sm text-slate-500">
-						Add an expense...
-					</div>
-					<button className="p-2 text-brand-primary">
-						<Send size={24} />
-					</button>
-				</div>
-			</div>
+			{/* Input Area */}
+			<ExpenseInput groupId={id} />
 		</div>
 	);
 }

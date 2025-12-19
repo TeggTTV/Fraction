@@ -14,7 +14,7 @@ export function MobileContainer({ children, className }: MobileContainerProps) {
 			{/* Mobile Frame Container */}
 			<main
 				className={cn(
-					'relative flex h-full w-full flex-col overflow-hidden bg-background sm:h-[850px] sm:max-h-[90vh] sm:w-[400px] sm:rounded-[40px] sm:border-[8px] sm:border-zinc-900 sm:shadow-2xl',
+					'relative flex h-full w-full flex-col overflow-hidden bg-background sm:h-212.5 sm:max-h-[90vh] sm:w-100 sm:rounded-[40px] sm:border-8 sm:border-zinc-900 sm:shadow-2xl',
 					className
 				)}
 			>
@@ -24,7 +24,7 @@ export function MobileContainer({ children, className }: MobileContainerProps) {
 				</div>
 
 				{/* Dynamic Island Area (Desktop Only Aesthetic) */}
-				<div className="absolute left-1/2 top-2 z-50 hidden h-[28px] w-[100px] -translate-x-1/2 rounded-full bg-black sm:block" />
+				<div className="absolute left-1/2 top-2 z-50 hidden h-7 w-25 -translate-x-1/2 rounded-full bg-black sm:block" />
 
 				{children}
 			</main>

@@ -11,7 +11,8 @@ export interface Expense {
 	payerId: string;
 	amount: number;
 	description: string;
-	timestamp: string; // ISO date
+	date: Date;
+
 	splits: Split[];
 }
 

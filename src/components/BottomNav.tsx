@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Users, User, ScanLine, Plus, LucideIcon } from 'lucide-react';
+import { Home, Clock, User, ScanLine, Plus, LucideIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
@@ -53,8 +53,8 @@ export function BottomNav() {
 
 				<NavItem
 					href="/groups"
-					icon={Users}
-					label="Groups"
+					icon={Clock}
+					label="Activity"
 					active={pathname?.startsWith('/groups') ?? false}
 				/>
 

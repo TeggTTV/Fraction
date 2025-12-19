@@ -1,106 +1,176 @@
-'use client';
-
-import { MOCK_GROUPS } from '@/data/mock';
-import { calculateUserBalance } from '@/lib/ledger';
-import { Plus, ChevronRight, Home, Plane, User } from 'lucide-react';
+import { auth } from '@/auth';
+import { getGroups } from '@/app/actions';
+import { Clock, Receipt, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { redirect } from 'next/navigation';
 
-export default function GroupsPage() {
-	const myId = 'me';
+export default async function ActivityPage() {
+	const session = await auth();
+	if (!session?.user) redirect('/api/auth/signin');
+
+	const groups = await getGroups();
+	const myId = session.user.id;
+
+	// Flatten all expenses from all groups with group context
+	const allExpenses = groups.flatMap((group) =>
+		group.expenses.map((expense) => ({
+			...expense,
+			groupName: group.name,
+			groupId: group.id,
+			groupType: group.type,
+		}))
+	);
+
+	// Sort by date, newest first
+	allExpenses.sort(
+		(a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+	);
+
+	// Group expenses by date
+	const groupedByDate: { [key: string]: typeof allExpenses } = {};
+	allExpenses.forEach((expense) => {
+		const dateKey = new Date(expense.date).toLocaleDateString('en-US', {
+			weekday: 'short',
+			month: 'short',
+			day: 'numeric',
+		});
+		if (!groupedByDate[dateKey]) {
+			groupedByDate[dateKey] = [];
+		}
+		groupedByDate[dateKey].push(expense);
+	});
 
 	return (
-		<div className="flex flex-col min-h-full bg-white px-4 pt-12">
-			<div className="mb-6 flex items-center justify-between">
+		<div className="flex flex-col min-h-full px-4 pt-4 pb-24">
+			{/* Header */}
+			<div className="mb-6">
 				<h1 className="text-3xl font-extrabold text-text-primary">
-					Groups
+					Activity
 				</h1>
-				<Link href="/groups/new">
-					<button className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-text-primary transition-colors hover:bg-slate-200">
-						<Plus size={24} />
-					</button>
-				</Link>
+				<p className="text-sm text-text-secondary mt-1">
+					All expenses across your groups
+				</p>
 			</div>
 
-			<div className="space-y-4">
-				{MOCK_GROUPS.map((group) => {
-					const balance = calculateUserBalance(myId, group.expenses);
-					const isOwed = balance > 0;
-					const isDebt = balance < 0;
-
-					let Icon = Home;
-					if (group.type === 'trip') Icon = Plane;
-					if (group.type === 'other') Icon = User;
-
-					return (
-						<Link href={`/groups/${group.id}`} key={group.id}>
-							<div className="group relative flex items-center justify-between overflow-hidden rounded-3xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:shadow-md active:scale-[98%]">
-								{/* Icon Background */}
-								<div className="flex items-center gap-4">
-									<div
-										className={cn(
-											'flex h-14 w-14 items-center justify-center rounded-2xl',
-											group.type === 'house'
-												? 'bg-indigo-100 text-indigo-600'
-												: group.type === 'trip'
-												? 'bg-teal-100 text-teal-600'
-												: 'bg-slate-100 text-slate-600'
-										)}
-									>
-										<Icon size={28} />
-									</div>
-
-									<div>
-										<h2 className="text-lg font-bold text-text-primary">
-											{group.name}
-										</h2>
-										<p className="text-sm text-text-secondary">
-											{group.members.length} members
-										</p>
-									</div>
-								</div>
-
-								<div className="flex items-center gap-3">
-									<div className="text-right">
-										{balance === 0 && (
-											<span className="text-sm font-medium text-text-muted">
-												Settled
-											</span>
-										)}
-										{isOwed && (
-											<div className="flex flex-col items-end">
-												<span className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">
-													You are owed
-												</span>
-												<span className="text-lg font-bold text-emerald-600">
-													+${balance.toFixed(2)}
-												</span>
-											</div>
-										)}
-										{isDebt && (
-											<div className="flex flex-col items-end">
-												<span className="text-xs font-semibold text-orange-500 uppercase tracking-wider">
-													You owe
-												</span>
-												<span className="text-lg font-bold text-orange-500">
-													-$
-													{Math.abs(balance).toFixed(
-														2
-													)}
-												</span>
-											</div>
-										)}
-									</div>
-									<ChevronRight
-										size={20}
-										className="text-slate-300"
-									/>
-								</div>
+			{/* Activity List */}
+			{allExpenses.length === 0 ? (
+				<div className="flex flex-col items-center justify-center pt-20 text-center">
+					<div className="mb-4 rounded-full bg-slate-100 p-6">
+						<Receipt size={48} className="text-slate-400" />
+					</div>
+					<h3 className="text-lg font-bold text-text-primary mb-2">
+						No activity yet
+					</h3>
+					<p className="text-sm text-text-secondary">
+						Add some expenses to see them here
+					</p>
+				</div>
+			) : (
+				<div className="space-y-6">
+					{Object.entries(groupedByDate).map(([date, expenses]) => (
+						<div key={date}>
+							{/* Date Header */}
+							<div className="flex items-center gap-2 mb-3 px-1">
+								<Clock
+									size={14}
+									className="text-text-secondary"
+								/>
+								<span className="text-xs font-bold text-text-secondary uppercase tracking-wider">
+									{date}
+								</span>
 							</div>
-						</Link>
-					);
-				})}
-			</div>
+
+							{/* Expenses for this date */}
+							<div className="space-y-2">
+								{expenses.map((expense) => {
+									const isMine = expense.payerId === myId;
+									const myShare =
+										expense.splits.find(
+											(s) => s.userId === myId
+										)?.amount || 0;
+
+									return (
+										<Link
+											href={`/groups/${expense.groupId}`}
+											key={expense.id}
+										>
+											<div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 hover:shadow-md transition-all active:scale-[98%]">
+												<div className="flex items-start justify-between">
+													<div className="flex-1 min-w-0">
+														{/* Group tag */}
+														<div className="flex items-center gap-2 mb-1">
+															<span className="text-xs font-medium text-text-secondary bg-slate-100 px-2 py-0.5 rounded-full">
+																{
+																	expense.groupName
+																}
+															</span>
+														</div>
+
+														{/* Description */}
+														<h3 className="font-bold text-text-primary mb-1">
+															{
+																expense.description
+															}
+														</h3>
+
+														{/* Payer info */}
+														<p className="text-sm text-text-secondary">
+															{isMine ? (
+																<>
+																	You paid{' '}
+																	<span className="font-semibold text-text-primary">
+																		$
+																		{expense.amount.toFixed(
+																			2
+																		)}
+																	</span>
+																</>
+															) : (
+																<>
+																	{expense
+																		.payer
+																		?.name ||
+																		'Someone'}{' '}
+																	paid{' '}
+																	<span className="font-semibold text-text-primary">
+																		$
+																		{expense.amount.toFixed(
+																			2
+																		)}
+																	</span>
+																</>
+															)}
+														</p>
+													</div>
+
+													{/* My share */}
+													<div className="flex items-center gap-2 ml-3">
+														<div className="text-right">
+															<p className="text-xs text-text-secondary">
+																Your share
+															</p>
+															<p className="font-bold text-brand-primary">
+																$
+																{myShare.toFixed(
+																	2
+																)}
+															</p>
+														</div>
+														<ChevronRight
+															size={18}
+															className="text-slate-300"
+														/>
+													</div>
+												</div>
+											</div>
+										</Link>
+									);
+								})}
+							</div>
+						</div>
+					))}
+				</div>
+			)}
 		</div>
 	);
 }

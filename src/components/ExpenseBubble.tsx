@@ -70,7 +70,7 @@ export function ExpenseBubble({ expense, isMe, sender }: ExpenseBubbleProps) {
 							isMe ? 'text-blue-200' : 'text-gray-400'
 						)}
 					>
-						{format(new Date(expense.timestamp), 'h:mm a')}
+						{format(new Date(expense.date), 'h:mm a')}
 					</div>
 				</div>
 			</div>

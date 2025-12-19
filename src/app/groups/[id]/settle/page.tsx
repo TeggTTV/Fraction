@@ -3,7 +3,7 @@
 import { use } from 'react';
 import { MOCK_GROUPS, MOCK_USERS } from '@/data/mock';
 import { calculateDebts } from '@/lib/ledger';
-import { ChevronDown, X, CheckCheck } from 'lucide-react';
+import { X, CheckCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 
@@ -91,7 +91,7 @@ export default function SettlePage({
 										<span className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
 											Pays
 										</span>
-										<div className="my-1 h-[2px] w-full bg-slate-200 relative">
+										<div className="my-1 h-0.5 w-full bg-slate-200 relative">
 											<div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-slate-200 rotate-45 transform origin-center translate-x-1" />
 										</div>
 										<span className="font-bold text-lg text-text-primary">
