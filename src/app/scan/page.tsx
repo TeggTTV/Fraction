@@ -13,6 +13,7 @@ export default async function ScanPage() {
 	const simpleGroups = groups.map((g) => ({
 		id: g.id,
 		name: g.name,
+		type: g.type,
 	}));
 
 	return <ScanClient groups={simpleGroups} />;

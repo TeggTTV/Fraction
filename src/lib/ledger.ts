@@ -1,4 +1,20 @@
-import { Expense, User, Balance, DebtError } from '@/types';
+import { User, Expense, Split } from '@prisma/client';
+
+// Expense with splits included
+type ExpenseWithSplits = Expense & {
+	splits: Split[];
+};
+
+export interface Balance {
+	userId: string;
+	amount: number;
+}
+
+export interface DebtError {
+	from: string;
+	to: string;
+	amount: number;
+}
 
 /**
  * Calculates the net position for a specific user across a set of expenses.
@@ -8,7 +24,7 @@ import { Expense, User, Balance, DebtError } from '@/types';
  */
 export function calculateUserBalance(
 	userId: string,
-	expenses: Expense[]
+	expenses: ExpenseWithSplits[]
 ): number {
 	let balance = 0;
 
@@ -18,7 +34,7 @@ export function calculateUserBalance(
 			balance += expense.amount;
 		}
 
-		// 2. Was the user part of the split? (i.e., did they consume?)
+		// 2. How much does theuser owe on this expense?
 		const userSplit = expense.splits.find((s) => s.userId === userId);
 		if (userSplit) {
 			balance -= userSplit.amount;
@@ -34,7 +50,7 @@ export function calculateUserBalance(
  */
 export function calculateDebts(
 	members: User[],
-	expenses: Expense[]
+	expenses: ExpenseWithSplits[]
 ): DebtError[] {
 	// 1. Calculate net balances for everyone
 	const balances: { [userId: string]: number } = {};

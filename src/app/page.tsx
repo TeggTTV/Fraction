@@ -27,7 +27,6 @@ export default async function Home() {
 
 	// 1. Calculate Total Net Worth across all groups
 	const totalBalance = groups.reduce((acc, group) => {
-		// @ts-expect-error - Prisma expense type vs Shared Type overlap
 		return acc + calculateUserBalance(myId, group.expenses);
 	}, 0);
 
@@ -41,7 +40,6 @@ export default async function Home() {
 			);
 			const lastExpense = sortedExpenses[0];
 
-			// @ts-expect-error - Prisma expense type vs Shared Type overlap
 			const balance = calculateUserBalance(myId, group.expenses);
 			const isSettled = balance === 0;
 

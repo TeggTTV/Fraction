@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
 	LogIn,
 	UserPlus,
@@ -12,11 +12,16 @@ import {
 	Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { signUpUser, loginUser } from '@/app/actions';
+import AlertToast from './AlertToast';
 
 export default function AuthPage() {
+	const router = useRouter();
 	const [mode, setMode] = useState<'login' | 'signup'>('login');
 	const [isLoading, setIsLoading] = useState(false);
 	const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+	const [showError, setShowError] = useState(false);
+	const [errorMessage, setErrorMessage] = useState('');
 
 	// Login state
 	const [loginEmail, setLoginEmail] = useState('');
@@ -32,35 +37,69 @@ export default function AuthPage() {
 	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setIsLoading(true);
-		// TODO: Implement actual email/password login
-		await new Promise((resolve) => setTimeout(resolve, 1500));
-		setIsLoading(false);
-		alert('Email/password login not yet implemented');
+
+		try {
+			const result = await loginUser(loginEmail, loginPassword);
+			if (result.success) {
+				router.push('/');
+				router.refresh();
+			} else {
+				setErrorMessage(result.message || 'Failed to log in');
+				setShowError(true);
+			}
+		} catch (error) {
+			console.error('Login error:', error);
+			setErrorMessage('Something went wrong');
+			setShowError(true);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleSignup = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		if (signupPassword !== signupConfirmPassword) {
-			alert('Passwords do not match');
+			setErrorMessage('Passwords do not match');
+			setShowError(true);
+			return;
+		}
+
+		if (signupPassword.length < 6) {
+			setErrorMessage('Password must be at least 6 characters');
+			setShowError(true);
 			return;
 		}
 
 		setIsLoading(true);
-		// TODO: Implement actual signup
-		await new Promise((resolve) => setTimeout(resolve, 1500));
-		setIsLoading(false);
-		alert('Signup not yet implemented');
+
+		try {
+			const result = await signUpUser(
+				signupUsername,
+				signupEmail,
+				signupPassword,
+				receiveUpdates
+			);
+
+			if (result.success) {
+				router.push('/');
+				router.refresh();
+			} else {
+				setErrorMessage(result.message || 'Failed to create account');
+				setShowError(true);
+			}
+		} catch (error) {
+			console.error('Signup error:', error);
+			setErrorMessage('Something went wrong');
+			setShowError(true);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	const handleGoogleSignIn = async () => {
 		setIsGoogleLoading(true);
-		try {
-			await signIn('google', { callbackUrl: '/' });
-		} catch (error) {
-			console.error('Google sign-in error:', error);
-			setIsGoogleLoading(false);
-		}
+		window.location.href = '/api/auth/signin/google';
 	};
 
 	return (
@@ -366,6 +405,13 @@ export default function AuthPage() {
 					</>
 				)}
 			</button>
+
+			<AlertToast
+				isOpen={showError}
+				onClose={() => setShowError(false)}
+				message={errorMessage}
+				variant="error"
+			/>
 		</div>
 	);
 }

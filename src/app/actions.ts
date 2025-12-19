@@ -1,8 +1,72 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/auth';
+import { auth, signIn } from '@/auth';
 import { revalidatePath } from 'next/cache';
+import bcrypt from 'bcryptjs';
+
+export async function signUpUser(
+	username: string,
+	email: string,
+	password: string,
+	receiveUpdates: boolean
+) {
+	try {
+		// Check if user already exists
+		const existingUser = await prisma.user.findUnique({
+			where: { email },
+		});
+
+		if (existingUser) {
+			return { success: false, message: 'Email already registered' };
+		}
+
+		// Hash password
+		const hashedPassword = await bcrypt.hash(password, 10);
+
+		// Create user
+		const user = await prisma.user.create({
+			data: {
+				email,
+				name: username,
+				password: hashedPassword,
+				emailVerified: null,
+				image: null,
+			},
+		});
+
+		// Auto sign in after signup
+		await signIn('credentials', {
+			email,
+			password,
+			redirect: false,
+		});
+
+		return { success: true, message: 'Account created successfully' };
+	} catch (error) {
+		console.error('Signup error:', error);
+		return { success: false, message: 'Failed to create account' };
+	}
+}
+
+export async function loginUser(email: string, password: string) {
+	try {
+		const result = await signIn('credentials', {
+			email,
+			password,
+			redirect: false,
+		});
+
+		if (result?.error) {
+			return { success: false, message: 'Invalid credentials' };
+		}
+
+		return { success: true, message: 'Logged in successfully' };
+	} catch (error) {
+		console.error('Login error:', error);
+		return { success: false, message: 'Failed to log in' };
+	}
+}
 
 export async function addFriend(email: string) {
 	const session = await auth();
