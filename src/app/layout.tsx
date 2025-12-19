@@ -1,17 +1,14 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { MobileContainer } from '@/components/MobileContainer';
 import { BottomNav } from '@/components/BottomNav';
 
-const geistSans = Geist({
-	variable: '--font-geist-sans',
+const inter = Inter({
 	subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-	variable: '--font-geist-mono',
-	subsets: ['latin'],
+	display: 'swap',
+	variable: '--font-inter',
+	weight: ['300', '400', '500', '600', '700', '800', '900'],
 });
 
 export const metadata: Metadata = {
@@ -33,9 +30,7 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-			>
+			<body className={`${inter.className} antialiased`}>
 				<MobileContainer>
 					<div className="flex-1 h-full w-full overflow-y-auto no-scrollbar pb-24">
 						{children}
